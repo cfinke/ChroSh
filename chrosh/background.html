@@ -1,0 +1,25 @@
+<script>
+
+chrome.omnibox.setDefaultSuggestion({
+	"description": "%s"
+});
+
+chrome.omnibox.inInputCancelled.addListener(function () {
+	// escape
+});
+
+
+chrome.omnibox.onInputChanged.addListener(function (text, suggest) {
+	// keyup
+	suggest([]);
+});
+
+chrome.omnibox.onInputEntered.addListener(function (text) {
+	// oncommand
+});
+
+chrome.omnibox.inInputStarted.addListener(function () {
+	// keydown
+});
+
+</script>
