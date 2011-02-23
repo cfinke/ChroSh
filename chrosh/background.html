@@ -57,16 +57,22 @@ function handleInput(text, suggest) {
 			break;
 			case "cd":
 				if (typeof suggest == 'undefined') {
-					// 
 					var url = tokens[1];
 					
 					if (url.indexOf("://") == -1) {
-						url = "http://" + url;
+						chrome.tabs.getSelected(null, function (tab) {
+							chrome.tabs.sendRequest(tab.id, { "greeting": "cd", "path" : url }, function callback(response) {
+								if (response.status) {
+									chrome.tabs.update(tab.id, { "url" : response.url });
+								}
+							});
+						});
 					}
-					
-					chrome.tabs.getSelected(null, function (tab) {
-						chrome.tabs.update(tab.id, { "url": url });
-					});
+					else {
+						chrome.tabs.getSelected(null, function (tab) {
+							chrome.tabs.update(tab.id, { "url": url });
+						});
+					}
 				}
 			break;
 		}

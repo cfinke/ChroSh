@@ -22,6 +22,11 @@ chrome.extension.onRequest.addListener(
 			
 			sendResponse({ "status": true, "links": rv_array });
 		}
+		else if (request.greeting == "cd") {
+			var a_tag = document.createElement("a");
+			a_tag.setAttribute("href", request.path);
+			sendResponse({ "status": true, "url": a_tag.href });
+		}
 		else {
 			sendResponse({});
 		}
