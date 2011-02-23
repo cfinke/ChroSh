@@ -1,24 +1,84 @@
 <script>
 
+/*
 chrome.omnibox.setDefaultSuggestion({
-	"description": "%s"
+	"description": "Run CHROSH command: %s"
 });
+*/
 
-chrome.omnibox.inInputCancelled.addListener(function () {
+chrome.omnibox.onInputCancelled.addListener(function () {
 	// escape
 });
 
+function handleInput(text, suggest) {
+	text = text.replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
 
-chrome.omnibox.onInputChanged.addListener(function (text, suggest) {
 	// keyup
-	suggest([]);
-});
+	var suggestions = [];
 
-chrome.omnibox.onInputEntered.addListener(function (text) {
-	// oncommand
-});
+	var tokens = text.split(" ");
+	
+	if (tokens[0] == "$") {
+		tokens.shift();
+	}
 
-chrome.omnibox.inInputStarted.addListener(function () {
+	if (tokens.length > 0) {
+		var command = tokens[0];
+
+		switch (command) {
+			case "ls":
+				// Parse the links on the page and put them in the omnibox.
+				chrome.tabs.getSelected(null, function (tab) {
+					chrome.tabs.sendRequest(tab.id, { "greeting": "ls" }, function callback(response) {
+						if (response.status) {
+							var links = response.links;
+
+							if (tokens.indexOf("-r") != -1) {
+								links = links.reverse();
+							}
+
+							links = links.slice(0, 5);
+
+							links.forEach(function (el) {
+								suggestions.push({ "content": "cd " + el.href, "description": ("<url>" + el.href + "</url> <dim>" + el.title.replace(/&/g, "&amp;") + "</dim>").replace(/&/g, "&amp;") });
+							});
+
+							suggest(suggestions);
+						}
+					});
+				});
+			break;
+			case "history":
+				if (typeof suggest == 'undefined') {
+					chrome.tabs.getSelected(null, function (tab) {
+						chrome.tabs.update(tab.id, { "url": "chrome://history" });
+					});
+				}
+			break;
+			case "cd":
+				if (typeof suggest == 'undefined') {
+					// 
+					var url = tokens[1];
+					
+					if (url.indexOf("://") == -1) {
+						url = "http://" + url;
+					}
+					
+					chrome.tabs.getSelected(null, function (tab) {
+						chrome.tabs.update(tab.id, { "url": url });
+					});
+				}
+			break;
+		}
+	}
+}
+
+
+chrome.omnibox.onInputChanged.addListener(handleInput);
+
+chrome.omnibox.onInputEntered.addListener(handleInput);
+
+chrome.omnibox.onInputStarted.addListener(function () {
 	// keydown
 });
 

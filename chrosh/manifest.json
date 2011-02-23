@@ -12,5 +12,16 @@
 	},
 	"default_locale": "en_US",
 	"background_page": "background.html",
-	"minimum_chrome_version": "9.0.5"
+	"minimum_chrome_version": "9.0.5",
+	"content_scripts": [
+		{
+			"matches": ["http://*/*", "https://*/*"],
+			"js": ["content.js"]
+		}
+	],
+	"permissions": [
+		"tabs",
+		"http://*/*",
+		"https://*/*"
+	]
 }

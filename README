@@ -2,4 +2,7 @@ ChroSh is the Chrome Shell, a command-line interface to your browser and the Web
 
 Supported commands:
 
-* None yet.
+* history: Loads your browser history.
+* ls: Lists the links on the current page.
+** -r: Reverses the order of the list.
+* cd: Navigate to a URL (e.g., cd google.com)
