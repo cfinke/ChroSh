@@ -11,29 +11,44 @@ chrome.omnibox.onInputCancelled.addListener(function () {
 });
 
 function handleInput(text, suggest) {
-	text = text.replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
-
-	// keyup
-	var suggestions = [];
-
-	var tokens = text.split(" ");
+	var input = parseArguments(text);
 	
-	if (tokens[0] == "$") {
-		tokens.shift();
+	var go = false;
+	
+	if (typeof suggest == 'undefined') {
+		go = true;
 	}
-
-	if (tokens.length > 0) {
-		var command = tokens[0];
-
+	
+	var suggestions = [];
+	
+	if (!input.command) {
+		chrome.omnibox.setDefaultSuggestion({
+			"description": "ChroSh Commands: help, ls, cd, history"
+		});
+	}
+	else {
+		var command = input.command;
+		var arguments = input.arguments;
+		
 		switch (command) {
+			case "help":
+				if (go) {
+					chrome.tabs.create({ "url": chrome.extension.getURL('help.html') });
+				}
+				else {
+					chrome.omnibox.setDefaultSuggestion({
+						"description": "Show the ChroSh help page."
+					});
+				}
+			break;
 			case "ls":
 				// Parse the links on the page and put them in the omnibox.
 				chrome.tabs.getSelected(null, function (tab) {
 					chrome.tabs.sendRequest(tab.id, { "greeting": "ls" }, function callback(response) {
 						if (response.status) {
 							var links = response.links;
-
-							if (tokens.indexOf("-r") != -1) {
+							
+							if (arguments.indexOf("-r") != -1) {
 								links = links.reverse();
 							}
 
@@ -49,45 +64,57 @@ function handleInput(text, suggest) {
 				});
 			break;
 			case "history":
-				if (typeof suggest == 'undefined') {
+				if (go) {
 					chrome.tabs.getSelected(null, function (tab) {
 						chrome.tabs.update(tab.id, { "url": "chrome://history" });
 					});
 				}
+				else {
+					chrome.omnibox.setDefaultSuggestion({
+						"description": "Show Chrome's history page."
+					});
+				}
 			break;
 			case "cd":
-				if (tokens.length > 1) {
-					var url = tokens[1];
-					
-					if (typeof suggest == 'undefined') {
-						if (url.indexOf("://") == -1) {
-							chrome.tabs.getSelected(null, function (tab) {
-								chrome.tabs.sendRequest(tab.id, { "greeting": "cd", "path" : url }, function callback(response) {
-									if (response.status) {
-										chrome.tabs.update(tab.id, { "url" : response.url });
-									}
-								});
-							});
-						}
-						else {
-							chrome.tabs.getSelected(null, function (tab) {
-								chrome.tabs.update(tab.id, { "url": url });
-							});
-						}
-					}
-					else {
-						if (url) {
+				if (!go && arguments.length == 0) {
+					chrome.omnibox.setDefaultSuggestion({
+						"description": "Change URLs, relative to the current page's URL."
+					});
+				}
+				else {
+					if (arguments.length > 0) {
+						var url = arguments[0];
+						
+						if (go) {
 							if (url.indexOf("://") == -1) {
 								chrome.tabs.getSelected(null, function (tab) {
 									chrome.tabs.sendRequest(tab.id, { "greeting": "cd", "path" : url }, function callback(response) {
 										if (response.status) {
-											suggest([ { "content": "cd " + response.url, "description": ("Open <url>" + response.url + "</url>").replace(/&/g, "&amp;") } ]);
+											chrome.tabs.update(tab.id, { "url" : response.url });
 										}
 									});
 								});
 							}
 							else {
-								suggest([ { "content": "cd " + url, "description": ("Open <url>" + url + "</url>").replace(/&/g, "&amp;") } ]);
+								chrome.tabs.getSelected(null, function (tab) {
+									chrome.tabs.update(tab.id, { "url": url });
+								});
+							}
+						}
+						else {
+							if (url) {
+								if (url.indexOf("://") == -1) {
+									chrome.tabs.getSelected(null, function (tab) {
+										chrome.tabs.sendRequest(tab.id, { "greeting": "cd", "path" : url }, function callback(response) {
+											if (response.status) {
+												suggest([ { "content": "cd " + response.url, "description": ("Open <url>" + response.url + "</url>").replace(/&/g, "&amp;") } ]);
+											}
+										});
+									});
+								}
+								else {
+									suggest([ { "content": "cd " + url, "description": ("Open <url>" + url + "</url>").replace(/&/g, "&amp;") } ]);
+								}
 							}
 						}
 					}
@@ -97,6 +124,28 @@ function handleInput(text, suggest) {
 	}
 }
 
+function parseArguments(text) {
+	text = text.replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+	
+	var tokens = text.split(" ");
+	
+	if (tokens[0] == "$") {
+		tokens.shift();
+	}
+	
+	var rv = {};
+	
+	if (tokens.length > 0) {
+		rv.command = tokens[0];
+		rv.arguments = [];
+		
+		if (tokens.length > 1) {
+			rv.arguments = tokens.slice(1);
+		}
+	}
+	
+	return rv;
+}
 
 chrome.omnibox.onInputChanged.addListener(handleInput);
 
